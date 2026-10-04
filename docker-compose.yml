@@ -1,0 +1,103 @@
+# AI-EOS local stack.
+#   docker compose up -d --build                         # app + PostgreSQL + Redis + Qdrant
+#   docker compose --profile monitoring up -d            # + Prometheus + Grafana
+# Ports bind to 127.0.0.1 only: the stack is reachable from this machine, not your network.
+
+name: ai-eos
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *restart
+    build:
+      context: .
+      args:
+        INSTALL_ANALYTICS: "true"
+    image: ai-eos:local
+    env_file: .env
+    environment:
+      EOS__DATABASE__URL: postgresql+asyncpg://eos:${POSTGRES_PASSWORD:-eos-local-only}@postgres:5432/eos
+      EOS__REDIS__URL: redis://redis:6379/0
+      EOS__VECTOR__QDRANT_URL: http://qdrant:6333
+    ports:
+      - "127.0.0.1:${EOS_PORT:-8000}:8000"
+    volumes:
+      - workspace:/app/data
+      - ./config:/app/config:ro           # edit YAML on the host, then `docker compose restart app`
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # lets the app reach Ollama running on the host
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      qdrant: { condition: service_started }
+    deploy:
+      resources:
+        limits: { cpus: "2", memory: 2g }
+
+  postgres:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: eos
+      POSTGRES_USER: eos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eos-local-only}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eos -d eos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  qdrant:
+    <<: *restart
+    image: qdrant/qdrant:v1.12.4
+    volumes:
+      - qdrantdata:/qdrant/storage
+
+  prometheus:
+    <<: *restart
+    profiles: ["monitoring"]
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./deploy/monitoring:/etc/prometheus:ro
+      - promdata:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    <<: *restart
+    profiles: ["monitoring"]
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-change-me-grafana}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./deploy/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on: [prometheus]
+
+volumes:
+  workspace:
+  pgdata:
+  redisdata:
+  qdrantdata:
+  promdata:
+  grafanadata:

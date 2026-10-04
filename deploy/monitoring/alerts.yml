@@ -1,0 +1,31 @@
+groups:
+  - name: ai-eos
+    rules:
+      - alert: EOSDown
+        expr: up{job="ai-eos"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "AI-EOS is not responding to Prometheus scrapes"
+          runbook: "docs/guides/troubleshooting.md#the-app-will-not-start"
+      - alert: EOSHighTaskFailureRate
+        expr: sum(rate(eos_tasks_total{status="failed"}[15m])) / clamp_min(sum(rate(eos_tasks_total[15m])), 0.001) > 0.2
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "More than 20% of requests are failing"
+          runbook: "docs/guides/troubleshooting.md#requests-fail-or-time-out"
+      - alert: EOSLLMErrors
+        expr: sum by (provider) (rate(eos_llm_calls_total{outcome="error"}[10m])) > 0.05
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "LLM provider {{ $labels.provider }} is returning errors"
+          runbook: "docs/guides/troubleshooting.md#model-provider-errors"
+      - alert: EOSSlowRequests
+        expr: histogram_quantile(0.95, sum by (le) (rate(eos_task_seconds_bucket[30m]))) > 300
+        for: 30m
+        labels: { severity: info }
+        annotations:
+          summary: "95th percentile request time above 5 minutes"
+          runbook: "docs/guides/performance.md"

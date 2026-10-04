@@ -1,0 +1,115 @@
+# AI-EOS runtime configuration.
+# Every value here can be overridden by an environment variable:
+#   EOS__<SECTION>__<KEY>=value   e.g.  EOS__LLM__DEFAULT_PROVIDER=anthropic
+# Secrets (API keys, JWT secret, encryption key) belong in .env, never in this file.
+
+app:
+  name: AI-EOS
+  environment: development        # development | staging | production
+  log_level: INFO
+  log_json: true
+  cors_origins: ["http://localhost:8000"]
+
+database:
+  # SQLite works out of the box for a single machine; Docker Compose switches to Postgres.
+  url: sqlite+aiosqlite:///./data/eos.db
+  echo: false
+
+redis:
+  url: ""                          # empty = in-process fallback (fine for one replica)
+
+vector:
+  backend: qdrant                  # qdrant
+  qdrant_url: ""                   # empty = embedded in-memory Qdrant (data lost on restart)
+  qdrant_path: ./data/qdrant       # used when qdrant_url is empty and persist_local is true
+  persist_local: true
+  embedding_provider: hashing      # hashing (offline, lexical) | openai
+  embedding_model: text-embedding-3-small
+  embedding_dim: 384
+
+llm:
+  default_provider: offline        # offline | openai | anthropic | gemini | deepseek | mistral | ollama
+  temperature: 0.2
+  max_tokens: 2048
+  timeout_seconds: 120
+  providers:
+    openai:
+      kind: openai_compatible
+      base_url: https://api.openai.com/v1
+      model: gpt-4.1
+      api_key_env: OPENAI_API_KEY
+    anthropic:
+      kind: anthropic
+      base_url: https://api.anthropic.com
+      model: claude-sonnet-5-5
+      api_key_env: ANTHROPIC_API_KEY
+    gemini:
+      kind: gemini
+      base_url: https://generativelanguage.googleapis.com/v1beta
+      model: gemini-2.5-pro
+      api_key_env: GOOGLE_API_KEY
+    deepseek:
+      kind: openai_compatible
+      base_url: https://api.deepseek.com/v1
+      model: deepseek-chat
+      api_key_env: DEEPSEEK_API_KEY
+    mistral:
+      kind: openai_compatible
+      base_url: https://api.mistral.ai/v1
+      model: mistral-large-latest
+      api_key_env: MISTRAL_API_KEY
+    ollama:                        # Llama and other local models
+      kind: openai_compatible
+      base_url: http://localhost:11434/v1
+      model: llama3.1:8b
+      api_key_env: ""
+    offline:                       # deterministic, no network; for demos and tests
+      kind: offline
+      model: offline-1
+
+orchestration:
+  max_subtasks: 6
+  max_parallel_agents: 3
+  max_agent_steps: 6               # tool-use iterations per specialist per subtask
+  max_revisions: 1                 # times the Chief of Staff can send work back
+  validation_threshold: 0.6        # 0-1 score below which output is revised
+  history_turns: 10
+
+memory:
+  short_term_ttl_seconds: 86400
+  semantic_top_k: 5
+  knowledge_top_k: 5
+  chunk_size: 900
+  chunk_overlap: 150
+
+security:
+  jwt_algorithm: HS256
+  access_token_minutes: 60
+  rate_limit_per_minute: 60
+  max_input_chars: 20000
+  prompt_guard: true
+  block_on_injection: false        # true = reject suspicious input; false = flag and sanitize
+
+tools:
+  sandbox_root: ./data/workspace   # filesystem + python tools cannot escape this folder
+  python_timeout_seconds: 20
+  # Tools that change the outside world (gmail_send, calendar_create_event, github_create_issue,
+  # azdo_create_work_item, python_exec, write_file) wait for your approval. List any you trust here.
+  auto_approve: [write_file]
+  plugins: []                      # e.g. ["my_company.eos_tools"] - module with register(registry, settings)
+  http_timeout_seconds: 30
+  web_search:
+    provider: duckduckgo           # duckduckgo (no key) | tavily | none
+    api_key_env: TAVILY_API_KEY
+  github:
+    api_url: https://api.github.com
+    token_env: GITHUB_TOKEN
+  azure_devops:
+    organization_env: AZDO_ORG
+    token_env: AZDO_PAT
+  google:
+    # OAuth access token for Gmail / Calendar / Drive. See docs/guides/integrations.md.
+    access_token_env: GOOGLE_OAUTH_ACCESS_TOKEN
+    refresh_token_env: GOOGLE_OAUTH_REFRESH_TOKEN
+    client_id_env: GOOGLE_OAUTH_CLIENT_ID
+    client_secret_env: GOOGLE_OAUTH_CLIENT_SECRET

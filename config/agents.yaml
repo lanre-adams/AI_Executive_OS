@@ -1,0 +1,39 @@
+# Agent roster. Add an agent by adding an entry here and a prompt file in
+# src/ai_eos/agents/prompts/<prompt>.md - no code changes are needed.
+# `provider` / `model` are optional per-agent overrides of llm.default_provider.
+
+chief_of_staff:
+  title: Chief of Staff
+  prompt: chief_of_staff
+  # provider: anthropic
+
+specialists:
+  executive_assistant:
+    title: Executive Assistant
+    prompt: executive_assistant
+    description: Calendar, meetings, email triage and drafting, reminders, follow-ups, travel, meeting notes, documents.
+    tools: [gmail_search, gmail_read, gmail_draft, gmail_send, calendar_list_events, calendar_create_event,
+            drive_search, memory_search, write_file, read_file]
+  research_analytics:
+    title: Research & Analytics
+    prompt: research_analytics
+    description: Web and academic research, competitive and market analysis, data analysis with Python, statistics, reports.
+    tools: [web_search, fetch_url, knowledge_search, python_exec, read_file, write_file, memory_search]
+  operations:
+    title: Operations
+    prompt: operations
+    description: Project plans, SOPs, risk registers, KPIs, process improvement, work item tracking, operational reports.
+    tools: [azdo_list_work_items, azdo_create_work_item, github_list_issues, github_create_issue,
+            knowledge_search, write_file, read_file, memory_search]
+  software_engineer:
+    title: Software Engineer
+    prompt: software_engineer
+    description: Architecture, API and database design, backend/frontend code, code review, debugging, tests, secure coding.
+    tools: [github_search_code, github_get_file, github_list_issues, github_create_issue, python_exec,
+            read_file, write_file, list_files, knowledge_search]
+  devops_engineer:
+    title: DevOps Engineer
+    prompt: devops_engineer
+    description: CI/CD, Docker, Kubernetes, Terraform, cloud infrastructure, monitoring, deployment and reliability.
+    tools: [github_list_workflow_runs, azdo_list_pipelines, azdo_list_builds, github_get_file,
+            read_file, write_file, list_files, knowledge_search]

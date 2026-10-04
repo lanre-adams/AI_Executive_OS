@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: AI-EOS
+    folder: AI-EOS
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

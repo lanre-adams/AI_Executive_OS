@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-EOS · Chief of Staff</title>
+<style>
+:root{
+  --bg:#f6f5f1;--panel:#ffffff;--ink:#1d2321;--muted:#66706c;--line:#e3e1da;--accent:#0f6b5b;--accent-ink:#ffffff;
+  --accent-soft:#e2f0ec;--warn:#a35a00;--warn-soft:#fbefdc;--bad:#a8322d;--bad-soft:#f8e3e1;--ok:#2b7a3d;--ok-soft:#e3f2e5;
+  --code:#f0eee8;--shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"Cascadia Code",Menlo,monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#121615;--panel:#1a201e;--ink:#e6ebe8;--muted:#93a09a;--line:#2a3330;--accent:#4fb8a1;--accent-ink:#0b1210;
+  --accent-soft:#1d332d;--warn:#e0a252;--warn-soft:#33281a;--bad:#e58781;--bad-soft:#3a201e;--ok:#7cc98c;--ok-soft:#1d3122;
+  --code:#222a27;--shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--font)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.hidden{display:none!important}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav{border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:2px;background:var(--panel)}
+.brand{font-weight:700;letter-spacing:.2px;padding:4px 10px 16px;display:flex;align-items:center;gap:8px}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+nav button{all:unset;cursor:pointer;padding:8px 10px;border-radius:8px;color:var(--muted);display:flex;justify-content:space-between}
+nav button:hover{background:var(--accent-soft);color:var(--ink)}
+nav button.active{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.badge{background:var(--warn);color:#fff;border-radius:10px;padding:0 7px;font-size:11px;line-height:18px}
+nav .spacer{flex:1}
+nav .who{font-size:12px;color:var(--muted);padding:8px 10px}
+main{padding:24px 28px;max-width:1200px;width:100%}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+input,select,textarea{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;width:100%}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+label{font-size:12px;color:var(--muted);display:block;margin:10px 0 4px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:0 0 auto}.row .grow{flex:1}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;background:var(--code)}
+.pill.completed,.pill.executed,.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.failed,.pill.rejected{background:var(--bad-soft);color:var(--bad)}
+.pill.awaiting_approval,.pill.pending,.pill.needs_input,.pill.working{background:var(--warn-soft);color:var(--warn)}
+.pill.running,.pill.planning{background:var(--accent-soft);color:var(--accent)}
+.muted{color:var(--muted)}.small{font-size:12px}
+code,pre{font-family:var(--mono);background:var(--code);border-radius:6px}
+code{padding:1px 5px}pre{padding:10px;overflow:auto}
+/* chat */
+.chat{display:grid;grid-template-columns:220px 1fr;gap:14px;height:calc(100vh - 120px)}
+.convs{overflow:auto}
+.convs #convList button{all:unset;display:block;cursor:pointer;padding:7px 8px;border-radius:7px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.convs #convList button:hover,.convs #convList button.active{background:var(--accent-soft)}
+blockquote{border-left:3px solid var(--line);margin:8px 0;padding:2px 12px;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+.thread{display:flex;flex-direction:column;min-height:0}
+.messages{flex:1;overflow:auto;padding:4px 4px 12px}
+.msg{max-width:860px;margin:0 0 14px}
+.msg .who{font-size:12px;color:var(--muted);margin-bottom:3px}
+.msg.user .body{background:var(--accent-soft);border-radius:12px;padding:10px 14px;display:inline-block}
+.msg.assistant .body{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.msg .body p:first-child{margin-top:0}.msg .body p:last-child{margin-bottom:0}
+.msg .body table{margin:8px 0}
+.composer{display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.composer textarea{min-height:52px;max-height:200px}
+.progress{font-size:12px;color:var(--muted);margin:0 0 12px;padding-left:2px}
+.progress div::before{content:"› ";color:var(--accent)}
+/* kanban */
+.board{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:12px;overflow:auto}
+.col h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 8px}
+.tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer;font-size:13px}
+.tcard:hover{border-color:var(--accent)}
+.stat .n{font-size:26px;font-weight:700}
+.stat .l{color:var(--muted);font-size:12px}
+.bar{height:8px;background:var(--code);border-radius:4px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent)}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);max-width:860px;width:92vw;padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+#toast{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:20}
+.toast{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:13px;max-width:360px;box-shadow:0 6px 24px rgba(0,0,0,.2)}
+.login{max-width:380px;margin:12vh auto}
+.agent .state{float:right}
+@media (max-width:820px){.app{grid-template-columns:1fr}nav{flex-direction:row;overflow:auto;border-right:0;border-bottom:1px solid var(--line)}
+ nav .spacer,nav .who,.brand{display:none}.chat{grid-template-columns:1fr}.convs{display:none}main{padding:16px}}
+</style>
+</head>
+<body>
+<div id="login" class="login card hidden">
+  <h1>AI-EOS</h1><p class="sub">Sign in to your Chief of Staff</p>
+  <form id="loginForm">
+    <label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
+    <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+    <p id="loginErr" class="small" style="color:var(--bad)"></p>
+    <button class="btn primary" style="width:100%">Sign in</button>
+  </form>
+</div>
+
+<div id="app" class="app hidden">
+  <nav>
+    <div class="brand"><span class="dot"></span>AI-EOS</div>
+    <button data-view="chat" class="active">Chief of Staff</button>
+    <button data-view="tasks">Task board</button>
+    <button data-view="approvals">Approvals <span id="apprBadge" class="badge hidden">0</span></button>
+    <button data-view="agents">Agents</button>
+    <button data-view="memory">Memory</button>
+    <button data-view="knowledge">Knowledge base</button>
+    <button data-view="history">Workflow history</button>
+    <button data-view="metrics">Metrics</button>
+    <button data-view="prompts" data-admin>Prompt editor</button>
+    <button data-view="logs">Logs</button>
+    <button data-view="settings">Settings</button>
+    <div class="spacer"></div>
+    <div class="who" id="who"></div>
+    <button id="themeBtn">Toggle dark mode</button>
+    <button id="logoutBtn">Sign out</button>
+  </nav>
+  <main>
+    <!-- CHAT -->
+    <section id="view-chat">
+      <div class="chat">
+        <div class="card convs"><button class="btn primary" id="newConv" style="width:100%;margin-bottom:10px">+ New conversation</button><div id="convList"></div></div>
+        <div class="card thread">
+          <div class="row" style="margin-bottom:8px"><strong class="grow" id="convTitle">New conversation</strong>
+            <select id="modelSel" style="width:auto" title="Model for this request"></select></div>
+          <div class="messages" id="messages"><p class="muted">Tell your Chief of Staff what you need. They'll plan the work, brief the team and report back.</p></div>
+          <div class="progress" id="progress"></div>
+          <form class="composer" id="chatForm">
+            <textarea id="chatInput" class="grow" placeholder="e.g. Prepare me for Monday: summarise unread email, list my meetings, and draft replies to anything urgent." required></textarea>
+            <button class="btn primary" id="sendBtn">Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-tasks" class="hidden"><h1>Task board</h1><p class="sub">Every request and where it stands.</p><div class="board" id="board"></div></section>
+
+    <section id="view-approvals" class="hidden"><h1>Approvals</h1><p class="sub">Actions that affect the outside world wait here for you.</p>
+      <div class="card"><table><thead><tr><th>Requested</th><th>Agent</th><th>Action</th><th>Status</th><th></th></tr></thead><tbody id="apprRows"></tbody></table></div></section>
+
+    <section id="view-agents" class="hidden"><h1>Agents</h1><p class="sub">Your executive team. Live status updates as work happens.</p><div class="grid g2" id="agentCards"></div></section>
+
+    <section id="view-memory" class="hidden"><h1>Memory explorer</h1><p class="sub">What the Chief of Staff remembers about you. Delete anything you don't want kept.</p>
+      <div class="card" style="margin-bottom:14px"><div class="row"><input id="memQ" class="grow" placeholder="Search memory semantically"><select id="memKind" style="width:auto"><option value="">All kinds</option><option>fact</option><option>preference</option><option>episode</option><option>reflection</option></select><button class="btn" id="memSearch">Search</button></div>
+        <div class="row" style="margin-top:8px"><input id="memNew" class="grow" placeholder="Add a fact or preference, e.g. 'I prefer briefings as tables'"><select id="memNewKind" style="width:auto"><option>fact</option><option>preference</option></select><button class="btn primary" id="memAdd">Add</button></div></div>
+      <div class="card"><table><thead><tr><th>Kind</th><th>Content</th><th>When</th><th></th></tr></thead><tbody id="memRows"></tbody></table></div></section>
+
+    <section id="view-knowledge" class="hidden"><h1>Knowledge base</h1><p class="sub">Documents your agents can search (PDF, Markdown, text, CSV, JSON).</p>
+      <div class="card" style="margin-bottom:14px"><form id="uploadForm" class="row"><input type="file" id="file" class="grow" required><input id="docTitle" placeholder="Title (optional)" style="width:220px"><button class="btn primary">Upload</button></form>
+      <div class="row" style="margin-top:10px"><input id="kbQ" class="grow" placeholder="Test a search"><button class="btn" id="kbSearch">Search</button></div><div id="kbResults"></div></div>
+      <div class="card"><table><thead><tr><th>Title</th><th>Source</th><th>Chunks</th><th>Added</th><th></th></tr></thead><tbody id="docRows"></tbody></table></div></section>
+
+    <section id="view-history" class="hidden"><h1>Workflow history</h1><p class="sub">Plans, delegation and quality scores for each request.</p>
+      <div class="card"><table><thead><tr><th>When</th><th>Request</th><th>Priority</th><th>Status</th><th>Time</th></tr></thead><tbody id="histRows"></tbody></table></div></section>
+
+    <section id="view-metrics" class="hidden"><h1>Metrics</h1><p class="sub">Throughput and quality. Prometheus metrics are at <code>/metrics</code>.</p>
+      <div class="grid g4" id="statCards" style="margin-bottom:14px"></div><div class="card"><h3 style="margin-top:0">Agent quality (average review score)</h3><div id="agentBars"></div></div></section>
+
+    <section id="view-prompts" class="hidden"><h1>Prompt editor</h1><p class="sub">Change how each agent thinks. Edits override the defaults immediately; reset to restore.</p>
+      <div class="grid" style="grid-template-columns:240px 1fr"><div class="card" id="promptList"></div>
+      <div class="card"><div class="row"><strong class="grow" id="promptName">Select a prompt</strong><button class="btn" id="promptReset">Reset to default</button><button class="btn primary" id="promptSave">Save</button></div>
+      <textarea id="promptText" style="height:60vh;margin-top:10px;font-family:var(--mono);font-size:13px"></textarea></div></div></section>
+
+    <section id="view-logs" class="hidden"><h1>Logs</h1><p class="sub">Live events from the team, plus the security audit trail (admins).</p>
+      <div class="grid g2"><div class="card"><h3 style="margin-top:0">Live activity</h3><div id="liveLog" class="small" style="max-height:60vh;overflow:auto;font-family:var(--mono)"></div></div>
+      <div class="card" id="auditCard"><h3 style="margin-top:0">Audit log</h3><table class="small"><tbody id="auditRows"></tbody></table></div></div></section>
+
+    <section id="view-settings" class="hidden"><h1>Settings</h1><p class="sub">Model, notifications, API keys, integrations and users.</p>
+      <div class="grid g2">
+        <div class="card"><h3 style="margin-top:0">Model</h3><p class="small muted">Default model for your requests. Agents with a fixed model in agents.yaml keep theirs.</p>
+          <select id="defModel"></select><div id="providerTable" class="small" style="margin-top:10px"></div>
+          <label><input type="checkbox" id="notifyChk" style="width:auto"> Desktop notifications for approvals and finished tasks</label></div>
+        <div class="card"><h3 style="margin-top:0">API keys</h3><p class="small muted">For the CLI and scripts. Shown once at creation.</p>
+          <div class="row"><input id="keyName" class="grow" placeholder="Key name, e.g. laptop-cli"><button class="btn primary" id="keyCreate">Create</button></div>
+          <pre id="newKey" class="hidden small"></pre><table class="small"><tbody id="keyRows"></tbody></table></div>
+        <div class="card" data-admin><h3 style="margin-top:0">Integration secrets</h3><p class="small muted">Stored encrypted. Environment variables take precedence. Names: GITHUB_TOKEN, AZDO_ORG, AZDO_PAT, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN, TAVILY_API_KEY.</p>
+          <div class="row"><input id="secName" placeholder="NAME" style="width:42%"><input id="secVal" type="password" class="grow" placeholder="value"><button class="btn primary" id="secSave">Save</button></div>
+          <table class="small"><tbody id="secRows"></tbody></table></div>
+        <div class="card" data-admin><h3 style="margin-top:0">Users</h3>
+          <div class="row"><input id="uEmail" class="grow" placeholder="email"><input id="uPass" type="password" placeholder="password" style="width:140px"><select id="uRole" style="width:auto"><option>operator</option><option>viewer</option><option>admin</option></select><button class="btn primary" id="uAdd">Add</button></div>
+          <table class="small"><tbody id="userRows"></tbody></table></div>
+      </div></section>
+  </main>
+</div>
+<dialog id="dlg"><div id="dlgBody"></div><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" onclick="dlg.close()">Close</button></div></dialog>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = { token: sessionStorage.getItem("eos_token"), user: null, conv: null, es: null, agentState: {} };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// Minimal, dependency-free Markdown renderer. Everything is HTML-escaped first, so agent output
+// (which may contain text from emails or web pages) can never inject markup or script.
+function inline(t) {
+  return t.replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[\s(])[*_]([^*_\s][^*_]*)[*_](?=[\s).,;:!?]|$)/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+function md(src) {
+  const parts = String(src ?? "").split(/```[a-zA-Z0-9_-]*\n?/);
+  return parts.map((part, i) => i % 2 ? `<pre>${esc(part.replace(/\n$/, ""))}</pre>` : blocks(esc(part))).join("");
+}
+function blocks(text) {
+  const lines = text.split("\n"), out = []; let i = 0;
+  const isRow = l => /^\s*\|.*\|\s*$/.test(l);
+  while (i < lines.length) {
+    const l = lines[i];
+    if (!l.trim()) { i++; continue; }
+    let m;
+    if ((m = l.match(/^(#{1,6})\s+(.*)/))) { const n = Math.min(m[1].length + 1, 6); out.push(`<h${n}>${inline(m[2])}</h${n}>`); i++; continue; }
+    if (/^\s*(---|\*\*\*)\s*$/.test(l)) { out.push("<hr>"); i++; continue; }
+    if (isRow(l) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      const cells = r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => inline(c.trim()));
+      let html = "<table><thead><tr>" + cells(l).map(c => `<th>${c}</th>`).join("") + "</tr></thead><tbody>"; i += 2;
+      while (i < lines.length && isRow(lines[i])) { html += "<tr>" + cells(lines[i]).map(c => `<td>${c}</td>`).join("") + "</tr>"; i++; }
+      out.push(html + "</tbody></table>"); continue;
+    }
+    if (/^\s*([-*+]|\d+[.)])\s+/.test(l)) {
+      const ordered = /^\s*\d/.test(l); let html = ordered ? "<ol>" : "<ul>";
+      while (i < lines.length && /^\s*([-*+]|\d+[.)])\s+/.test(lines[i])) { html += `<li>${inline(lines[i].replace(/^\s*([-*+]|\d+[.)])\s+/, ""))}</li>`; i++; }
+      out.push(html + (ordered ? "</ol>" : "</ul>")); continue;
+    }
+    if (/^&gt;\s?/.test(l)) { let q = []; while (i < lines.length && /^&gt;\s?/.test(lines[i])) q.push(lines[i++].replace(/^&gt;\s?/, "")); out.push(`<blockquote>${inline(q.join("<br>"))}</blockquote>`); continue; }
+    const para = []; while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\s*([-*+]|\d+[.)])\s+|&gt;)/.test(lines[i]) && !isRow(lines[i])) para.push(lines[i++]);
+    if (!para.length) para.push(lines[i++]);
+    out.push(`<p>${inline(para.join("<br>"))}</p>`);
+  }
+  return out.join("");
+}
+const when = s => s ? new Date(s).toLocaleString() : "";
+const pill = s => `<span class="pill ${esc(s)}">${esc(String(s).replace(/_/g," "))}</span>`;
+const isAdmin = () => state.user && state.user.role === "admin";
+
+async function api(path, opts = {}) {
+  const headers = opts.body instanceof FormData ? {} : {"Content-Type": "application/json"};
+  if (state.token) headers.Authorization = "Bearer " + state.token;
+  const res = await fetch("/api" + path, {...opts, headers: {...headers, ...(opts.headers || {})}});
+  if (res.status === 401) { logout(); throw new Error("Session expired"); }
+  if (!res.ok) { let d = await res.text(); try { d = JSON.parse(d).detail } catch {} ; throw new Error(typeof d === "string" ? d : JSON.stringify(d)); }
+  return res.status === 204 ? null : res.json();
+}
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; $("#toast").append(t); setTimeout(() => t.remove(), 5000); }
+function notify(title, body) { if (state.user?.settings?.notifications && "Notification" in window && Notification.permission === "granted") new Notification(title, {body}); }
+
+// ---- theme
+function applyTheme(t) { document.documentElement.dataset.theme = t; localStorage.setItem("eos_theme", t); }
+applyTheme(localStorage.getItem("eos_theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+$("#themeBtn").onclick = () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+
+// ---- auth
+$("#loginForm").onsubmit = async e => {
+  e.preventDefault(); $("#loginErr").textContent = "";
+  try { const r = await api("/auth/login", {method: "POST", body: JSON.stringify({email: $("#email").value, password: $("#password").value})});
+    state.token = r.access_token; sessionStorage.setItem("eos_token", r.access_token); await boot();
+  } catch (err) { $("#loginErr").textContent = err.message; }
+};
+function logout() { sessionStorage.removeItem("eos_token"); state.token = null; state.es?.close(); $("#app").classList.add("hidden"); $("#login").classList.remove("hidden"); }
+$("#logoutBtn").onclick = logout;
+
+async function boot() {
+  if (!state.token) { $("#login").classList.remove("hidden"); return; }
+  try { state.user = await api("/auth/me"); } catch { return; }
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  $("#who").textContent = `${state.user.email} · ${state.user.role}`;
+  document.querySelectorAll("[data-admin]").forEach(el => el.classList.toggle("hidden", !isAdmin()));
+  $("#auditCard").classList.toggle("hidden", !isAdmin());
+  state.agents = await api("/agents"); await loadModels(); await loadConversations(); refreshApprovalBadge(); connectEvents();
+}
+
+// ---- navigation
+const loaders = { tasks: loadBoard, approvals: loadApprovals, agents: loadAgents, memory: loadMemory, knowledge: loadDocs,
+  history: loadHistory, metrics: loadMetrics, prompts: loadPrompts, logs: loadAudit, settings: loadSettings };
+document.querySelectorAll("nav button[data-view]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button[data-view]").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll("main > section").forEach(s => s.classList.toggle("hidden", s.id !== "view-" + b.dataset.view));
+  loaders[b.dataset.view]?.().catch(e => toast(e.message));
+});
+
+// ---- live events
+function connectEvents() {
+  state.es?.close();
+  const es = new EventSource("/api/events?token=" + encodeURIComponent(state.token)); state.es = es;
+  const handle = e => { const ev = JSON.parse(e.data); logLive(ev); onEvent(ev); };
+  ["task.created","task.planned","task.completed","task.failed","task.needs_input","subtask.started","subtask.completed",
+   "subtask.reviewed","tool.called","approval.requested","approval.decided","security.flag"].forEach(t => es.addEventListener(t, handle));
+}
+function logLive(ev) {
+  const line = document.createElement("div");
+  line.textContent = `${new Date(ev.at).toLocaleTimeString()}  ${ev.type}  ${JSON.stringify(ev.data).slice(0, 160)}`;
+  $("#liveLog").prepend(line);
+}
+const agentTitle = k => (state.agents || []).find(a => a.key === k)?.title || k;
+function onEvent(ev) {
+  const p = $("#progress"), d = ev.data;
+  const add = t => { const x = document.createElement("div"); x.textContent = t; p.append(x); };
+  if (ev.type === "task.planned" && state.pending) add(`Plan: ${d.subtasks.length ? d.subtasks.map(s => agentTitle(s.agent)).join(", ") : "answering directly"}`);
+  if (ev.type === "subtask.started") { state.agentState[d.agent] = "working"; if (state.pending) add(`${agentTitle(d.agent)} is working…`); }
+  if (ev.type === "subtask.completed") { state.agentState[d.agent] = "idle"; if (state.pending) add(`${agentTitle(d.agent)} finished${d.tools.length ? " (used " + d.tools.join(", ") + ")" : ""}`); }
+  if (ev.type === "subtask.reviewed" && state.pending) add(`Chief of Staff review: ${d.score.toFixed(2)} ${d.passed ? "✓" : "– sent back for revision"}`);
+  if (ev.type === "approval.requested") { toast("Approval needed: " + d.summary.slice(0, 120)); notify("Approval needed", d.summary); refreshApprovalBadge(); }
+  if (ev.type === "approval.decided") refreshApprovalBadge();
+  if (ev.type === "task.completed" && !state.pending) notify("Task finished", "Your Chief of Staff has a result.");
+  if (ev.type === "security.flag") toast("Security: input flagged (" + d.flags.join(", ") + ")");
+  if (!$("#view-agents").classList.contains("hidden")) renderAgents();
+}
+
+// ---- chat
+async function loadModels() {
+  const m = await api("/settings/models"); state.models = m;
+  const opts = m.providers.map(p => `<option value="${esc(p.name)}" ${p.configured ? "" : "disabled"}>${esc(p.name)} · ${esc(p.model)}${p.configured ? "" : " (no key)"}</option>`).join("");
+  $("#modelSel").innerHTML = `<option value="">Default (${esc(m.selected || m.default)})</option>` + opts;
+}
+async function loadConversations() {
+  const list = await api("/conversations");
+  $("#convList").innerHTML = list.map(c => `<button data-id="${c.id}" class="${c.id === state.conv ? "active" : ""}" title="${esc(c.title)}">${esc(c.title)}</button>`).join("") || '<p class="small muted">No conversations yet.</p>';
+  $("#convList").querySelectorAll("button").forEach(b => b.onclick = () => openConversation(b.dataset.id, b.textContent));
+}
+async function openConversation(id, title) {
+  state.conv = id; $("#convTitle").textContent = title; const msgs = await api("/conversations/" + id);
+  $("#messages").innerHTML = ""; msgs.forEach(m => addMessage(m.role, m.content)); loadConversations();
+}
+$("#newConv").onclick = () => { state.conv = null; $("#convTitle").textContent = "New conversation"; $("#messages").innerHTML = ""; $("#chatInput").focus(); };
+function addMessage(role, content, extra = "") {
+  const div = document.createElement("div"); div.className = "msg " + role;
+  div.innerHTML = `<div class="who">${role === "user" ? "You" : "Chief of Staff"}</div><div class="body">${role === "user" ? esc(content).replace(/\n/g, "<br>") : md(content)}</div>${extra}`;
+  $("#messages").append(div); $("#messages").scrollTop = 1e9;
+}
+$("#chatInput").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#chatForm").requestSubmit(); } });
+$("#chatForm").onsubmit = async e => {
+  e.preventDefault(); const text = $("#chatInput").value.trim(); if (!text) return;
+  addMessage("user", text); $("#chatInput").value = ""; $("#sendBtn").disabled = true; $("#progress").innerHTML = "<div>Chief of Staff is planning…</div>"; state.pending = true;
+  try {
+    const r = await api("/chat", {method: "POST", body: JSON.stringify({message: text, conversation_id: state.conv, provider: $("#modelSel").value || null})});
+    if (!state.conv) $("#convTitle").textContent = text.slice(0, 80);
+    state.conv = r.conversation_id;
+    const meta = `<div class="small muted" style="margin-top:4px">${pill(r.status)} · ${r.results.length} agent task(s) · <a href="#" onclick="showTask('${r.task_id}');return false">details</a></div>`;
+    addMessage("assistant", r.answer, meta); if (state.conv) loadConversations();
+  } catch (err) { addMessage("assistant", "⚠️ " + err.message); }
+  finally { state.pending = false; $("#sendBtn").disabled = false; $("#progress").innerHTML = ""; }
+};
+
+async function showTask(id) {
+  const t = await api("/tasks/" + id);
+  const plan = (t.plan.subtasks || []).map(s => `<tr><td>${esc(s.id)}</td><td>${esc(agentTitle(s.agent))}</td><td>${esc(s.instruction)}</td><td>${esc((s.depends_on || []).join(", "))}</td></tr>`).join("");
+  const subs = t.subtasks.map(s => `<details><summary>${esc(agentTitle(s.agent))} · ${pill(s.status)} · score ${s.score ?? "–"} · revisions ${s.revisions}</summary>
+     ${s.feedback ? `<p class="small muted">Review: ${esc(s.feedback)}</p>` : ""}${s.tool_calls.length ? `<p class="small">Tools: ${s.tool_calls.map(c => esc(c.tool) + (c.approval_id ? " (awaiting approval)" : c.ok ? "" : " (failed)")).join(", ")}</p>` : ""}
+     <div class="card" style="margin:6px 0 10px">${md(s.output)}</div></details>`).join("");
+  $("#dlgBody").innerHTML = `<h1>${esc(t.intent || t.request.slice(0, 80))}</h1><p class="sub">${pill(t.status)} · priority ${esc(t.priority)} · ${(t.duration_ms / 1000).toFixed(1)}s · ${when(t.created_at)}</p>
+    ${t.flags.length ? `<p class="small" style="color:var(--warn)">Flags: ${esc(t.flags.join(", "))}</p>` : ""}
+    <h3>Request</h3><p>${esc(t.request)}</p>${plan ? `<h3>Plan</h3><table class="small"><thead><tr><th>ID</th><th>Agent</th><th>Instruction</th><th>Needs</th></tr></thead><tbody>${plan}</tbody></table>` : ""}
+    ${subs ? `<h3>Agent work</h3>${subs}` : ""}<h3>Final answer</h3><div class="card">${md(t.answer)}</div>`;
+  dlg.showModal();
+}
+
+// ---- tasks board & history
+async function loadBoard() {
+  const tasks = await api("/tasks"); const cols = [["planning","Planning"],["running","In progress"],["needs_input","Needs you"],["awaiting_approval","Awaiting approval"],["completed","Done"]];
+  $("#board").innerHTML = cols.map(([k, label]) => `<div class="col"><h3>${label}</h3>${tasks.filter(t => t.status === k || (k === "completed" && t.status === "failed")).slice(0, 40).map(t =>
+    `<div class="tcard" onclick="showTask('${t.id}')"><div>${esc((t.intent || t.request).slice(0, 110))}</div><div class="small muted" style="margin-top:6px">${pill(t.priority)} ${t.status === "failed" ? pill("failed") : ""} ${when(t.created_at)}</div></div>`).join("") || '<p class="small muted">Empty</p>'}</div>`).join("");
+}
+async function loadHistory() {
+  const tasks = await api("/tasks");
+  $("#histRows").innerHTML = tasks.map(t => `<tr onclick="showTask('${t.id}')" style="cursor:pointer"><td class="small">${when(t.created_at)}</td><td>${esc(t.request.slice(0, 120))}</td><td>${pill(t.priority)}</td><td>${pill(t.status)}</td><td class="small">${(t.duration_ms / 1000).toFixed(1)}s</td></tr>`).join("") || '<tr><td colspan="5" class="muted">No requests yet.</td></tr>';
+}
+
+// ---- approvals
+async function refreshApprovalBadge() { const p = await api("/approvals?status=pending"); $("#apprBadge").textContent = p.length; $("#apprBadge").classList.toggle("hidden", !p.length); }
+async function loadApprovals() {
+  const rows = await api("/approvals");
+  $("#apprRows").innerHTML = rows.map(a => `<tr><td class="small">${when(a.created_at)}</td><td>${esc(agentTitle(a.agent))}</td><td><strong>${esc(a.tool)}</strong><pre class="small" style="white-space:pre-wrap;max-width:560px">${esc(a.summary)}</pre>${a.result ? `<div class="small muted">${esc(a.result.slice(0, 300))}</div>` : ""}</td><td>${pill(a.status)}</td>
+    <td>${a.status === "pending" ? `<div class="row"><button class="btn primary" onclick="decide('${a.id}',true)">Approve</button><button class="btn danger" onclick="decide('${a.id}',false)">Reject</button></div>` : ""}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">Nothing waiting.</td></tr>';
+}
+async function decide(id, approve) { try { const r = await api("/approvals/" + id, {method: "POST", body: JSON.stringify({approve})}); toast(`${approve ? "Approved" : "Rejected"}: ${r.status}`); loadApprovals(); refreshApprovalBadge(); } catch (e) { toast(e.message); } }
+
+// ---- agents
+async function loadAgents() { state.agents = await api("/agents"); renderAgents(); }
+function renderAgents() {
+  $("#agentCards").innerHTML = (state.agents || []).map(a => `<div class="card agent"><span class="state">${pill(state.agentState[a.key] || "idle")}</span><h3 style="margin:0 0 4px">${esc(a.title)}</h3>
+    <p class="small muted">${esc(a.description)}</p><p class="small">Model: <code>${esc(a.provider)}${a.model ? " / " + esc(a.model) : ""}</code></p>
+    ${a.tools.length ? `<p class="small">Tools: ${a.tools.map(t => `<code>${esc(t)}</code>`).join(" ")}</p>` : ""}
+    ${a.key !== "chief_of_staff" ? `<button class="btn small" onclick="directRun('${a.key}')">Assign directly…</button>` : ""}</div>`).join("");
+}
+async function directRun(key) {
+  const instruction = prompt(`Instruction for ${agentTitle(key)} (bypasses the Chief of Staff):`); if (!instruction) return;
+  toast("Working…"); try { const r = await api(`/agents/${key}/run`, {method: "POST", body: JSON.stringify({instruction})});
+    $("#dlgBody").innerHTML = `<h1>${esc(agentTitle(key))}</h1>${r.ok ? md(r.output) : `<p style="color:var(--bad)">${esc(r.error)}</p>`}`; dlg.showModal(); } catch (e) { toast(e.message); }
+}
+
+// ---- memory
+async function loadMemory() {
+  const kind = $("#memKind").value; const items = await api("/memory" + (kind ? "?kind=" + kind : "")); renderMemory(items);
+}
+function renderMemory(items) {
+  $("#memRows").innerHTML = items.map(m => `<tr><td>${pill(m.kind)}</td><td>${esc(m.content)}${m.score != null ? ` <span class="small muted">(${m.score})</span>` : ""}</td><td class="small">${when(m.created_at)}</td><td><button class="btn danger small" onclick="forget('${m.id}')">Delete</button></td></tr>`).join("") || '<tr><td colspan="4" class="muted">Nothing stored yet.</td></tr>';
+}
+$("#memSearch").onclick = async () => { const q = $("#memQ").value.trim(); if (!q) return loadMemory(); renderMemory(await api("/memory/search?q=" + encodeURIComponent(q))); };
+$("#memKind").onchange = loadMemory;
+$("#memAdd").onclick = async () => { const content = $("#memNew").value.trim(); if (!content) return; await api("/memory", {method: "POST", body: JSON.stringify({kind: $("#memNewKind").value, content})}); $("#memNew").value = ""; loadMemory(); };
+async function forget(id) { if (confirm("Delete this memory?")) { await api("/memory/" + id, {method: "DELETE"}); loadMemory(); } }
+
+// ---- knowledge
+async function loadDocs() {
+  const docs = await api("/knowledge");
+  $("#docRows").innerHTML = docs.map(d => `<tr><td>${esc(d.title)}</td><td class="small">${esc(d.source)}</td><td>${d.chunks}</td><td class="small">${when(d.created_at)}</td><td><button class="btn danger small" onclick="delDoc('${d.id}')">Delete</button></td></tr>`).join("") || '<tr><td colspan="5" class="muted">No documents yet.</td></tr>';
+}
+$("#uploadForm").onsubmit = async e => {
+  e.preventDefault(); const fd = new FormData(); fd.append("file", $("#file").files[0]); if ($("#docTitle").value) fd.append("title", $("#docTitle").value);
+  try { const d = await api("/knowledge", {method: "POST", body: fd}); toast(`Indexed "${d.title}" (${d.chunks} chunks)`); e.target.reset(); loadDocs(); } catch (err) { toast(err.message); }
+};
+$("#kbSearch").onclick = async () => { const hits = await api("/knowledge/search?q=" + encodeURIComponent($("#kbQ").value));
+  $("#kbResults").innerHTML = hits.map(h => `<div class="card small" style="margin-top:8px"><strong>${esc(h.title)} #${h.chunk}</strong> <span class="muted">score ${h.score}</span><div>${esc(h.text.slice(0, 400))}</div></div>`).join("") || '<p class="small muted">No matches.</p>'; };
+async function delDoc(id) { if (confirm("Delete this document from the knowledge base?")) { await api("/knowledge/" + id, {method: "DELETE"}); loadDocs(); } }
+
+// ---- metrics
+async function loadMetrics() {
+  const m = await api("/metrics/summary"); const s = m.tasks_by_status; const total = Object.values(s).reduce((a, b) => a + b, 0);
+  const stat = (n, l) => `<div class="card stat"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  $("#statCards").innerHTML = stat(total, "Requests") + stat(s.completed || 0, "Completed") + stat((s.awaiting_approval || 0) + (s.needs_input || 0), "Waiting on you") + stat(s.failed || 0, "Failed") + stat((m.avg_task_ms / 1000).toFixed(1) + "s", "Avg. time per request");
+  $("#agentBars").innerHTML = m.agents.map(a => `<div style="margin:10px 0"><div class="row small"><span class="grow">${esc(agentTitle(a.agent))} · ${a.subtasks} subtasks</span><span>${a.avg_score ?? "–"}</span></div><div class="bar"><span style="width:${(a.avg_score || 0) * 100}%"></span></div></div>`).join("") || '<p class="muted small">No data yet.</p>';
+}
+
+// ---- prompts
+async function loadPrompts() {
+  const list = await api("/prompts");
+  $("#promptList").innerHTML = list.map(p => `<div><button class="btn" style="width:100%;text-align:left;margin-bottom:6px" onclick="openPrompt('${p.name}')">${esc(p.name)}${p.overridden ? " ✎" : ""}</button></div>`).join("");
+}
+async function openPrompt(name) { const p = await api("/prompts/" + name); state.prompt = name; $("#promptName").textContent = name + (p.overridden ? " (customised)" : ""); $("#promptText").value = p.content; }
+$("#promptSave").onclick = async () => { if (!state.prompt) return; try { await api("/prompts/" + state.prompt, {method: "PUT", body: JSON.stringify({content: $("#promptText").value})}); toast("Saved"); loadPrompts(); openPrompt(state.prompt); } catch (e) { toast(e.message); } };
+$("#promptReset").onclick = async () => { if (state.prompt && confirm("Restore the default prompt?")) { await api("/prompts/" + state.prompt, {method: "DELETE"}); loadPrompts(); openPrompt(state.prompt); } };
+
+// ---- logs
+async function loadAudit() { if (!isAdmin()) return; const rows = await api("/audit");
+  $("#auditRows").innerHTML = rows.map(r => `<tr><td>${when(r.at)}</td><td><code>${esc(r.action)}</code></td><td>${esc(r.resource)}</td><td class="muted">${esc(JSON.stringify(r.detail)).slice(0, 120)}</td></tr>`).join(""); }
+
+// ---- settings
+async function loadSettings() {
+  await loadModels(); const m = state.models;
+  $("#defModel").innerHTML = `<option value="">System default (${esc(m.default)})</option>` + m.providers.map(p => `<option value="${esc(p.name)}" ${p.name === m.selected ? "selected" : ""} ${p.configured ? "" : "disabled"}>${esc(p.name)} · ${esc(p.model)}</option>`).join("");
+  $("#providerTable").innerHTML = m.providers.map(p => `${p.configured ? "🟢" : "⚪"} ${esc(p.name)} <span class="muted">(${esc(p.kind)})</span>`).join("<br>");
+  $("#notifyChk").checked = !!state.user.settings?.notifications;
+  const keys = await api("/auth/api-keys");
+  $("#keyRows").innerHTML = keys.map(k => `<tr><td>${esc(k.name)}</td><td><code>${esc(k.prefix)}…</code></td><td>${k.revoked ? pill("rejected") : `<button class="btn danger small" onclick="revokeKey('${k.id}')">Revoke</button>`}</td></tr>`).join("");
+  if (isAdmin()) {
+    $("#secRows").innerHTML = (await api("/secrets")).map(s => `<tr><td><code>${esc(s.name)}</code></td><td class="muted">${when(s.updated_at)}</td><td><button class="btn danger small" onclick="delSecret('${s.name}')">Delete</button></td></tr>`).join("");
+    $("#userRows").innerHTML = (await api("/users")).map(u => `<tr><td>${esc(u.email)}</td><td>${pill(u.role)}</td><td>${u.is_active ? "active" : "disabled"}</td><td>${u.id !== state.user.id ? `<button class="btn small" onclick="toggleUser('${u.id}',${!u.is_active})">${u.is_active ? "Disable" : "Enable"}</button>` : ""}</td></tr>`).join("");
+  }
+}
+$("#defModel").onchange = async () => { await api("/settings/me", {method: "PUT", body: JSON.stringify({provider: $("#defModel").value})}); state.user = await api("/auth/me"); toast("Default model updated"); loadModels(); };
+$("#notifyChk").onchange = async () => { if ($("#notifyChk").checked && "Notification" in window) await Notification.requestPermission();
+  await api("/settings/me", {method: "PUT", body: JSON.stringify({notifications: $("#notifyChk").checked})}); state.user = await api("/auth/me"); };
+$("#keyCreate").onclick = async () => { const name = $("#keyName").value.trim(); if (!name) return; const k = await api("/auth/api-keys", {method: "POST", body: JSON.stringify({name})});
+  $("#newKey").textContent = "Copy now, it won't be shown again:\n" + k.key; $("#newKey").classList.remove("hidden"); $("#keyName").value = ""; loadSettings(); };
+async function revokeKey(id) { if (confirm("Revoke this key?")) { await api("/auth/api-keys/" + id, {method: "DELETE"}); loadSettings(); } }
+$("#secSave").onclick = async () => { try { await api("/secrets/" + $("#secName").value.trim(), {method: "PUT", body: JSON.stringify({value: $("#secVal").value})}); $("#secVal").value = ""; toast("Secret saved (encrypted)"); loadSettings(); } catch (e) { toast(e.message); } };
+async function delSecret(n) { if (confirm("Delete " + n + "?")) { await api("/secrets/" + n, {method: "DELETE"}); loadSettings(); } }
+$("#uAdd").onclick = async () => { try { await api("/users", {method: "POST", body: JSON.stringify({email: $("#uEmail").value, password: $("#uPass").value, role: $("#uRole").value})}); toast("User created"); loadSettings(); } catch (e) { toast(e.message); } };
+async function toggleUser(id, active) { await api("/users/" + id, {method: "PATCH", body: JSON.stringify({is_active: active})}); loadSettings(); }
+
+boot();
+</script>
+</body>
+</html>
